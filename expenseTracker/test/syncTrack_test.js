@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, it } from "jsr:@std/testing/bdd";
 import { assertEquals } from "jsr:@std/assert";
-import { listExpenses, parseExpenses } from "../syncTrack.js";
+import {
+  listExpenses,
+  parseExpenses,
+  searchExpenses,
+  updateExpense,
+} from "../syncTrack.js";
 
 const pseudoFiles = {
   fileWithArray: [],
@@ -15,6 +20,7 @@ const pseudoFiles = {
       description: "something",
     },
   ],
+  emptyFile: [],
 };
 
 describe("test parseExpenses", () => {
@@ -47,7 +53,7 @@ describe("test listExpenses", () => {
   afterAll(() => {
     Deno.readTextFileSync = oldRead;
   });
-  it("when file contains valid expense", () => {
+  it("should list file contents as file contains valid expense", () => {
     assertEquals(listExpenses("demoFile"), [
       {
         category: "food",
@@ -56,5 +62,70 @@ describe("test listExpenses", () => {
         description: "something",
       },
     ]);
+  });
+});
+
+describe("test searchExpenses", () => {
+  const oldRead = Deno.readTextFileSync;
+  beforeAll(() => {
+    Deno.readTextFileSync = (filePath) => JSON.stringify(pseudoFiles[filePath]);
+  });
+  afterAll(() => {
+    Deno.readTextFileSync = oldRead;
+  });
+  it("should return found expense searched category is present", () => {
+    assertEquals(searchExpenses("demoFile", ["food"]), [
+      {
+        category: "food",
+        amount: 100,
+        date: "something",
+        description: "something",
+      },
+    ]);
+  });
+  it("should return empty array as searched category is not present", () => {
+    assertEquals(searchExpenses("demoFile", ["notPresentKeyword"]), []);
+  });
+});
+
+describe("test updateExpenses", () => {
+  const oldRead = Deno.readTextFileSync;
+  beforeAll(() => {
+    Deno.readTextFileSync = (filePath) => JSON.stringify(pseudoFiles[filePath]);
+  });
+  afterAll(() => {
+    Deno.readTextFileSync = oldRead;
+  });
+  it("should add new expense and return updated expense list", () => {
+    assertEquals(
+      updateExpense("demoFile", ["food", 120, "something", "somethingElse"]),
+      [
+        {
+          category: "food",
+          amount: 100,
+          date: "something",
+          description: "something",
+        },
+        {
+          category: "food",
+          amount: 120,
+          date: "something",
+          description: "somethingElse",
+        },
+      ]
+    );
+  });
+  it("should add new expense in empty list and return updated expense list", () => {
+    assertEquals(
+      updateExpense("emptyFile", ["food", 120, "something", "somethingElse"]),
+      [
+        {
+          category: "food",
+          amount: 120,
+          date: "something",
+          description: "somethingElse",
+        },
+      ]
+    );
   });
 });
