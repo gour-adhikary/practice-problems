@@ -2,11 +2,21 @@ const parseExistingExpenses = (filePath) => {
   return Deno.readTextFile(filePath).then((data) => JSON.parse(data));
 };
 
-const filterOut = (threshold, filePath, operator) => {
-  return parseExistingExpenses(filePath).then((existingExpenses) => {
-    return existingExpenses.filter(({ amount }) =>
-      operator === "<" ? Number(amount) < threshold : Number(amount) > threshold
-    );
+const processExpenses = (filePath, filterFn) => {
+  parseExistingExpenses(filePath).then((existingExpenses) => {
+    const updatedExpenses = filterFn
+      ? filterFn(existingExpenses)
+      : existingExpenses;
+    console.table(updatedExpenses);
+  });
+};
+
+const filterOut = (threshold, operator, existingExpenses) => {
+  return existingExpenses.filter(({ amount }) => {
+    const amountInNumber = Number(amount);
+    return operator === "<"
+      ? amountInNumber < threshold
+      : amountInNumber > threshold;
   });
 };
 
@@ -15,22 +25,23 @@ const filterExpenses = (details, filePath) => {
   const [predicate, threshold] = stringifiedDetails
     .match(/([<>])(\d+)/)
     .slice(1);
-  filterOut(Number(threshold), filePath, predicate).then((filteredExpenses) => {
-    console.table(filteredExpenses);
-  });
+
+  processExpenses(filePath, (existingExpenses) =>
+    filterOut(threshold, predicate, existingExpenses)
+  );
 };
 
 const searchExpenses = (details, filePath) => {
   const [keyword] = details;
-  parseExistingExpenses(filePath).then((existingExpenses) => {
+  processExpenses(filePath, (existingExpenses) => {
     const foundExpense = existingExpenses.find(
       ({ category }) => category === keyword
     );
     if (!foundExpense) {
       console.log("No matches found!");
-      return;
+      return [];
     }
-    console.table(foundExpense);
+    return [foundExpense];
   });
 };
 
@@ -41,10 +52,9 @@ const sortExpenses = (parsedExpenses) => {
 };
 
 const listExpenses = (filePath) => {
-  parseExistingExpenses(filePath).then((parsedExpenses) => {
-    const sortedExpenses = sortExpenses(parsedExpenses);
-    console.table(sortedExpenses);
-  });
+  processExpenses(filePath, (existingExpenses) =>
+    sortExpenses(existingExpenses)
+  );
 };
 
 const addExpense = (details, filePath) => {
