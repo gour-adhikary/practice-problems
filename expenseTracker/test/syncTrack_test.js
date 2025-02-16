@@ -5,7 +5,7 @@ import {
   parseExpenses,
   searchExpenses,
   updateExpense,
-} from "../syncTrack.js";
+} from "../src/syncTrack.js";
 
 const pseudoFiles = {
   fileWithArray: [],
